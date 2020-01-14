@@ -1,0 +1,26 @@
+sudo: required
+services:
+    - docker
+
+before_install:
+    - docker build -t urbanofonseca/react-test -f ./client/Dockerfile.dev ./client
+
+# Primary tests running section
+script: 
+    - docker run -e CI=true USERNAME/react-test npm test
+
+# After the tests, build the productionized versions
+# of our Docker containers.
+after_success:
+    - docker build -t urbanofonseca/multi-client ./client
+    - docker build -t urbanofonseca/multi-nginx ./nginx
+    - docker build -t urbanofonseca/multi-server ./server
+    - docker build -t urbanofonseca/multi-worker ./worker
+    # Log in to the docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin 
+
+    # Take those images and  push them to docker hub.
+    - docker push urbanofonseca/multi-client
+    - docker push urbanofonseca/multi-nginx
+    - docker push urbanofonseca/multi-server
+    - docker push urbanofonseca/multi-worker
